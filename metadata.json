@@ -1,0 +1,14 @@
+{
+  "uuid": "sound-switch@oserna",
+  "name": "Sound Switch",
+  "description": "Switch audio output and input device pairs with one click",
+  "icon": "cs-sound",
+  "version": "1.0.0",
+  "cinnamon-version": [
+    "6.0",
+    "6.2",
+    "6.4",
+    "6.6"
+  ],
+  "author": "oserna"
+}
