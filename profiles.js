@@ -11,7 +11,7 @@ var PROFILES = [
         name: "desktop",
         output: "hdmi",
         input: "Brio",
-        icon: "video-display-symbolic"
+        icon: "xsi-display-symbolic"
     },
     {
         name: "headphones",

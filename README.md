@@ -20,7 +20,7 @@ This Cinnamon panel applet is `sound-switch@oserna`. It switches audio Output de
 
 | Profile | Output match | Input match | Icon |
 |---|---|---|---|
-| `desktop` | `hdmi` | `Brio` | `video-display-symbolic` |
+| `desktop` | `hdmi` | `Brio` | `xsi-display-symbolic` |
 | `headphones` | `JBL_Quantum_TWS` | `JBL_Quantum_TWS` | `xsi-audio-headset-symbolic` |
 
 Matching is case-insensitive against the device name and the description. A click applies the next available Profile. A Profile is unavailable when one of its devices is missing. The panel icon shows the Active profile, detected from the default output.
