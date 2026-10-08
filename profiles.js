@@ -23,6 +23,15 @@ var PROFILES = [
 
 var GENERIC_ICON = "xsi-audio-volume-high-symbolic";
 
+var STARTUP_STATE = { profile: "desktop", volume: 0.5 };
+
+function findProfileByName(profiles, name) {
+    for (let i = 0; i < profiles.length; i++) {
+        if (profiles[i].name === name) return profiles[i];
+    }
+    return null;
+}
+
 function deviceName(device) {
     if (!device) return "";
     if (typeof device.get_name === "function") return device.get_name() || "";

@@ -24,6 +24,10 @@ _Avoid_: Current profile, selected profile
 Apply a Profile: set its Output device as the default sink and its Input device as the default source. Streams follow the new default sink because WirePlumber has `follow = true`.
 _Avoid_: Change, toggle, rotate
 
+**Startup state**:
+The Profile and output volume the applet applies when the login session starts: `desktop` at 50% volume, unmuted. The applet applies it once per session.
+_Avoid_: Boot profile, default preset, initial mode
+
 **Applet**:
 The panel applet instance with UUID `sound-switch@oserna` and display name "Sound Switch".
 _Avoid_: Spice, extension

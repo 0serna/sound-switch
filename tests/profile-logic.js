@@ -63,6 +63,13 @@ check("short name strips Digital Stereo and HDMI", Profiles.shortDeviceName(HDMI
 check("short name keeps descriptions without suffix", Profiles.shortDeviceName(UNKNOWN), "Dummy Output");
 check("short name for cvc-like accessors", Profiles.shortDeviceName(CVC_LIKE), "JBL Quantum TWS");
 
+// Startup state
+check("findProfileByName finds desktop", Profiles.findProfileByName(PROFILES, "desktop"), PROFILES[0]);
+check("findProfileByName finds headphones", Profiles.findProfileByName(PROFILES, "headphones"), PROFILES[1]);
+check("findProfileByName unknown returns null", Profiles.findProfileByName(PROFILES, "nonexistent"), null);
+check("startup profile exists", Profiles.findProfileByName(PROFILES, Profiles.STARTUP_STATE.profile) !== null, true);
+check("startup volume is 0.5", Profiles.STARTUP_STATE.volume, 0.5);
+
 // Active profile detection
 check("active desktop by HDMI", Profiles.activeProfileIndex(PROFILES, HDMI), 0);
 check("active headphones by JBL", Profiles.activeProfileIndex(PROFILES, JBL_SINK), 1);
