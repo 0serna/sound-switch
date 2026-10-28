@@ -43,10 +43,42 @@ class SoundSwitchApplet extends Applet.IconApplet {
         }
     }
 
+    _readDefault(kind) {
+        try {
+            let [ok, out] = GLib.spawn_command_line_sync(`pactl get-default-${kind}`);
+            return ok ? new TextDecoder().decode(out).trim() : '';
+        } catch (e) {}
+        return '';
+    }
+
+    _defaultSink() {
+        // shortcut: needs pactl (falls back to Cvc's stale cache), drop when Cvc tracks PipeWire defaults.
+        let name = this._readDefault('sink');
+        if (name) return { name: name };
+        return this._control.get_default_sink();
+    }
+
+    _setDefault(kind, device) {
+        let name = Profiles.deviceName(device);
+        try {
+            let command = `pactl set-default-${kind} ${GLib.shell_quote(name)}`;
+            let [ok, , , status] = GLib.spawn_command_line_sync(command);
+            if (ok && status === 0 && this._readDefault(kind) === name) return;
+        } catch (e) {}
+        let key = kind === 'sink' ? 'default.audio.sink' : 'default.audio.source';
+        try {
+            let value = GLib.shell_quote(JSON.stringify({ name: name }));
+            let [ok, , , status] = GLib.spawn_command_line_sync(`pw-metadata -n default 0 ${key} ${value}`);
+            if (ok && status === 0) return;
+        } catch (e) {}
+        if (kind === 'sink') this._control.set_default_sink(device);
+        else this._control.set_default_source(device);
+    }
+
     _refresh() {
         let sinks = this._control.get_sinks();
         let sources = this._control.get_sources();
-        let index = Profiles.activeProfileIndex(Profiles.PROFILES, this._control.get_default_sink());
+        let index = Profiles.activeProfileIndex(Profiles.PROFILES, this._defaultSink());
 
         let icon = index >= 0 ? Profiles.PROFILES[index].icon : Profiles.GENERIC_ICON;
         this.set_applet_icon_symbolic_name(icon);
@@ -140,15 +172,16 @@ class SoundSwitchApplet extends Applet.IconApplet {
     on_applet_clicked(event) {
         let sinks = this._control.get_sinks();
         let sources = this._control.get_sources();
-        let active = Profiles.activeProfileIndex(Profiles.PROFILES, this._control.get_default_sink());
+        let active = Profiles.activeProfileIndex(Profiles.PROFILES, this._defaultSink());
         let next = Profiles.nextAvailableProfileIndex(Profiles.PROFILES, active, sinks, sources);
         if (next < 0) return;
 
         let profile = Profiles.PROFILES[next];
         let sink = Profiles.findDevice(sinks, profile.output);
         let source = Profiles.findDevice(sources, profile.input);
-        if (sink) this._control.set_default_sink(sink);
-        if (source) this._control.set_default_source(source);
+        if (sink) this._setDefault('sink', sink);
+        if (source) this._setDefault('source', source);
+        this._refresh();
     }
 
     on_applet_removed_from_panel() {
