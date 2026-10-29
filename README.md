@@ -27,6 +27,8 @@ Matching is case-insensitive against the device name and the description. A clic
 
 Switching sets the default sink and source through `pactl`, then falls back to `pw-metadata` and `Cvc`. Playing streams follow the new default because WirePlumber has `follow = true`. Without that policy, streams stay on the old output.
 
+PipeWire 1.0.5 does not notify PulseAudio clients when the default sink changes. The applet restarts `csd-media-keys` after a switch so the volume keys follow the Active profile; the session manager restarts it, and the applet starts it if the respawn limit blocks that.
+
 ## Startup state
 
 At every login the applet applies the Startup state once per session: the `desktop` Profile, with its output at 50% volume, unmuted. If the `desktop` devices do not appear within 30 seconds, the applet changes nothing.

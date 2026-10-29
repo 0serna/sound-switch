@@ -6,6 +6,8 @@ const Profiles = require('./profiles');
 
 const STARTUP_WINDOW_SECONDS = 30;
 const DEFAULT_POLL_SECONDS = 2;
+const MEDIA_KEYS_PROCESS = 'csd-media-keys';
+const MEDIA_KEYS_RESTART_SECONDS = 3;
 
 class SoundSwitchApplet extends Applet.IconApplet {
     constructor(metadata, orientation, panel_height, instance_id) {
@@ -16,7 +18,8 @@ class SoundSwitchApplet extends Applet.IconApplet {
         this._startupDone = false;
         this._startupWindowEnds = 0;
         this._startupTimer = 0;
-        this._lastDefaultSink = '';
+        this._mediaKeysTimer = 0;
+        this._lastDefaultSink = this._readDefault('sink');
         this._control = new Cvc.MixerControl({ name: 'Sound Switch' });
 
         this._connect('state-changed', () => this._onStateChanged());
@@ -83,9 +86,33 @@ class SoundSwitchApplet extends Applet.IconApplet {
         else this._control.set_default_source(device);
     }
 
+    _restartMediaKeys() {
+        // shortcut: PipeWire 1.0.5 does not emit default-sink changes, so the media
+        // keys stay on the login device; drop when PipeWire notifies PulseAudio clients.
+        try {
+            let [ok, , , status] = GLib.spawn_command_line_sync(`pkill -TERM -x ${MEDIA_KEYS_PROCESS}`);
+            if (!ok || status !== 0) return;
+        } catch (e) {
+            return;
+        }
+
+        if (this._mediaKeysTimer) GLib.source_remove(this._mediaKeysTimer);
+        this._mediaKeysTimer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, MEDIA_KEYS_RESTART_SECONDS, () => {
+            this._mediaKeysTimer = 0;
+            try {
+                let [ok, , , status] = GLib.spawn_command_line_sync(`pgrep -x ${MEDIA_KEYS_PROCESS}`);
+                if (ok && status !== 0) GLib.spawn_command_line_async(MEDIA_KEYS_PROCESS);
+            } catch (e) {}
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
     _pollDefaultSink() {
         let name = this._readDefault('sink');
-        if (name && name !== this._lastDefaultSink) this._refresh();
+        if (name && name !== this._lastDefaultSink) {
+            this._refresh();
+            this._restartMediaKeys();
+        }
     }
 
     _refresh() {
@@ -151,11 +178,13 @@ class SoundSwitchApplet extends Applet.IconApplet {
         this._startupDone = true;
         this._setDefault('sink', sink);
         this._setDefault('source', source);
+        this._lastDefaultSink = Profiles.deviceName(sink);
 
         sink.volume = this._control.get_vol_max_norm() * Profiles.STARTUP_STATE.volume;
         sink.push_volume();
         if (sink.is_muted) sink.change_is_muted(false);
 
+        this._restartMediaKeys();
         this._closeStartupWindow();
     }
 
@@ -197,6 +226,7 @@ class SoundSwitchApplet extends Applet.IconApplet {
         if (sink) this._setDefault('sink', sink);
         if (source) this._setDefault('source', source);
         this._refresh();
+        if (sink) this._restartMediaKeys();
     }
 
     on_applet_removed_from_panel() {
@@ -208,6 +238,7 @@ class SoundSwitchApplet extends Applet.IconApplet {
             GLib.source_remove(this._defaultPollTimer);
             this._defaultPollTimer = 0;
         }
+        // The one-shot media keys timer stays alive so a reload cannot leave it dead.
         for (let id of this._signalIds) this._control.disconnect(id);
         this._signalIds = [];
         this._control.close();

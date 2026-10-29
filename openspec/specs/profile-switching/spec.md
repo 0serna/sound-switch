@@ -39,6 +39,11 @@ The applet SHALL apply the next available Profile on each left click. Applying a
 - **WHEN** the user applies a Profile while audio is playing on the previous output
 - **THEN** the audio plays on the new Output device
 
+#### Scenario: Volume keys follow the switch
+
+- **WHEN** the user applies a Profile and then presses a volume key
+- **THEN** the volume changes on the new Output device
+
 ### Requirement: Active profile detection
 
 The Active profile SHALL be the Profile whose Output device matches the current default sink. The applet SHALL track default device changes made outside the applet.
