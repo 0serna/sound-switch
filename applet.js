@@ -134,8 +134,8 @@ class SoundSwitchApplet extends Applet.IconApplet {
         let source = Profiles.findDevice(sources, profile.input);
         // Cvc emits signals during the calls below; mark done so they cannot re-enter.
         this._startupDone = true;
-        this._control.set_default_sink(sink);
-        this._control.set_default_source(source);
+        this._setDefault('sink', sink);
+        this._setDefault('source', source);
 
         sink.volume = this._control.get_vol_max_norm() * Profiles.STARTUP_STATE.volume;
         sink.push_volume();

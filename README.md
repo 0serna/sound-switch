@@ -25,7 +25,7 @@ This Cinnamon panel applet is `sound-switch@oserna`. It switches audio Output de
 
 Matching is case-insensitive against the device name and the description. A click applies the next available Profile. A Profile is unavailable when one of its devices is missing. The panel icon shows the Active profile, detected from the default output.
 
-Switching uses `Cvc.MixerControl.set_default_sink()` and `set_default_source()`. Playing streams follow the new default because WirePlumber has `follow = true`. Without that policy, streams stay on the old output.
+Switching sets the default sink and source through `pactl`, then falls back to `pw-metadata` and `Cvc`. Playing streams follow the new default because WirePlumber has `follow = true`. Without that policy, streams stay on the old output.
 
 ## Startup state
 
