@@ -5,6 +5,7 @@ const GLib = imports.gi.GLib;
 const Profiles = require('./profiles');
 
 const STARTUP_WINDOW_SECONDS = 30;
+const DEFAULT_POLL_SECONDS = 2;
 
 class SoundSwitchApplet extends Applet.IconApplet {
     constructor(metadata, orientation, panel_height, instance_id) {
@@ -15,6 +16,7 @@ class SoundSwitchApplet extends Applet.IconApplet {
         this._startupDone = false;
         this._startupWindowEnds = 0;
         this._startupTimer = 0;
+        this._lastDefaultSink = '';
         this._control = new Cvc.MixerControl({ name: 'Sound Switch' });
 
         this._connect('state-changed', () => this._onStateChanged());
@@ -27,6 +29,12 @@ class SoundSwitchApplet extends Applet.IconApplet {
 
         this.actor.hide();
         this._control.open();
+
+        // shortcut: Cvc misses external default sink changes; drop when Cvc tracks PipeWire defaults.
+        this._defaultPollTimer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, DEFAULT_POLL_SECONDS, () => {
+            this._pollDefaultSink();
+            return GLib.SOURCE_CONTINUE;
+        });
     }
 
     _connect(signal, handler) {
@@ -75,10 +83,17 @@ class SoundSwitchApplet extends Applet.IconApplet {
         else this._control.set_default_source(device);
     }
 
+    _pollDefaultSink() {
+        let name = this._readDefault('sink');
+        if (name && name !== this._lastDefaultSink) this._refresh();
+    }
+
     _refresh() {
         let sinks = this._control.get_sinks();
         let sources = this._control.get_sources();
-        let index = Profiles.activeProfileIndex(Profiles.PROFILES, this._defaultSink());
+        let sink = this._defaultSink();
+        this._lastDefaultSink = Profiles.deviceName(sink);
+        let index = Profiles.activeProfileIndex(Profiles.PROFILES, sink);
 
         let icon = index >= 0 ? Profiles.PROFILES[index].icon : Profiles.GENERIC_ICON;
         this.set_applet_icon_symbolic_name(icon);
@@ -188,6 +203,10 @@ class SoundSwitchApplet extends Applet.IconApplet {
         if (this._startupTimer) {
             GLib.source_remove(this._startupTimer);
             this._startupTimer = 0;
+        }
+        if (this._defaultPollTimer) {
+            GLib.source_remove(this._defaultPollTimer);
+            this._defaultPollTimer = 0;
         }
         for (let id of this._signalIds) this._control.disconnect(id);
         this._signalIds = [];
